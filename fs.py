@@ -1,6 +1,11 @@
+# LucarioFS by NDRAEY.
+
+# Lucario - Creatures Inc. (The Pokémon Company)
+
 import structures
 # import struct
 
+VERSION = (0, 1, 0)
 
 # Align function
 ALIGN = lambda value, align: value + (-value & (align - 1))
@@ -29,7 +34,7 @@ class LucarioFS:
         self.file.seek(0)
 
         # Read 4 bytes and unpack them
-        header = structures.HEADER.unpack_from(self.file.read(4))
+        header = structures.HEADER.unpack_from(self.file.read(len(self.header)))
 
         # Is they match?
         return self.header_bytes == header
@@ -279,7 +284,7 @@ class LucarioFS:
 
         return datas[:entry.real_size]
     
-    def format(self, full = False):
+    def format(self, full = False, version = VERSION):
         # Erase file descriptions (not data)
         
         self.file.seek(0)
@@ -294,6 +299,10 @@ class LucarioFS:
         # Write magic
         self.file.seek(0)
         self.file.write(self.header.encode("utf-8"))
+
+        # Write version
+        for i in version:
+            self.file.write(i.to_bytes(1, 'little'))
 
     # Special functions
     

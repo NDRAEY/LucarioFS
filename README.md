@@ -1,2 +1,2 @@
 # LucarioFS
-Simple File System in ~250 lines of code.
+Simple File System in ~350 lines of code.
