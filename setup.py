@@ -7,7 +7,8 @@ setup(
     package_dir={'': 'src'},
     entry_points = {
         'console_scripts': [
-            'mkfs.lucario = lucario_fs.utils.mkfs:premain'
+            'mkfs.lucario = lucario_fs.utils.mkfs:premain',
+            'lucariofs-write = lucario_fs.utils.write:premain'
         ]
     },
     package_data={'lucario_fs': ['utils/*']},

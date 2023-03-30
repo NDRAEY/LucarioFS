@@ -11,8 +11,6 @@ except:
 
 # import struct
 
-VERSION = (0, 1, 0)
-
 # Align function
 ALIGN = lambda value, align: value + (-value & (align - 1))
 
@@ -30,7 +28,7 @@ class LucarioFS:
         self.max_entries = structures.FT_SIZE(self.get_disk_size())
 
         # Start of data section
-        self.data_start = ALIGN(512 + 4 + (self.max_entries * structures.FT_ENTRY.size), 512)
+        self.data_start = ALIGN(512 + (self.max_entries * structures.FT_ENTRY.size), 512)
 
         # Read file table.
         self.get_file_table()
@@ -39,7 +37,7 @@ class LucarioFS:
         # Go to start of the disk
         self.file.seek(0)
 
-        # Read 4 bytes and unpack them
+        # Read bytes and unpack them
         header = structures.HEADER.unpack_from(self.file.read(len(self.header)))
 
         # Is they match?
@@ -47,7 +45,7 @@ class LucarioFS:
 
     def get_file_table(self):
         # Skip 512 bytes (boot sector) and 4 bytes of maxiaml length of table
-        self.file.seek(512 + 4)
+        self.file.seek(512)
 
         # Entry buffer
         entries = []
@@ -100,7 +98,7 @@ class LucarioFS:
 
     def find_free_entry_idx(self):
         # Search for free entry in the file entry table
-        self.file.seek(512 + 4)  # After header and size
+        self.file.seek(512)  # After header and size
 
         for i in range(self.max_entries):
             typ, *entry_data = self.file.read(structures.FT_ENTRY.size)
@@ -111,7 +109,7 @@ class LucarioFS:
 
     def entry_idx_to_seek(self, idx):
         # Find position on disk, where file entry index is located
-        return 512 + 4 + (idx * structures.FT_ENTRY.size)
+        return 512 + (idx * structures.FT_ENTRY.size)
 
     def to_name(self, name):
         # Convert string to struct-readable array
@@ -295,7 +293,7 @@ class LucarioFS:
         
         self.file.seek(0)
         self.file.write(b'\x00' * (
-            512 + 4 + (structures.FT_ENTRY.size * self.max_entries)
+            512 + (structures.FT_ENTRY.size * self.max_entries)
         ))
 
         if full:
