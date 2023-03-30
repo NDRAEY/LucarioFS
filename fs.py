@@ -38,9 +38,6 @@ class LucarioFS:
         # Skip 512 bytes (boot sector) and 4 bytes of maxiaml length of table
         self.file.seek(512 + 4)
 
-        # Save value
-        # entry_count = self.max_entries
-
         # Entry buffer
         entries = []
 
@@ -101,8 +98,6 @@ class LucarioFS:
             if typ == structures.EntryType.NONE.value:
                 return i
 
-        return 0
-
     def entry_idx_to_seek(self, idx):
         # Find position on disk, where file entry index is located
         return 512 + 4 + (idx * structures.FT_ENTRY.size)
@@ -160,7 +155,7 @@ class LucarioFS:
     def get_free_sector(self):
         # Get free sector in DATA area.
 
-        # Convert psoiton to sector at data start.
+        # Convert positon to sector at data start.
         start_sec = self.data_start // 512
 
         # Buffer for used sectors (needed for filtering)
@@ -171,9 +166,13 @@ class LucarioFS:
             # Preserve special sector_list sector.
             used_sectors.append(i.sector_list_pos)
 
+            # Preserve additional sectors for big files.
+            for j in range(i.sector_list_size // 512):
+                for w in range(1, 8):
+                    used_sectors.append(i.sector_list_pos + j + w)
+
             # And sector where data is stored.
             used_sectors.extend(self.get_sectors_from_file_entry(i))
-
 
         # Start filtering
         sec = start_sec
@@ -183,6 +182,9 @@ class LucarioFS:
             if sec not in used_sectors:
                 break
             sec += 1
+
+        # print("Found free sector:", sec)
+        # print("Used sectors:", used_sectors)
 
         return sec
 
@@ -197,19 +199,25 @@ class LucarioFS:
     def write_file(self, name, data, folder_id = 0):
         # Hardest thing is write to file.
 
-        # Get free sector to store sectors that file have.
-        sector_list_pos = self.get_free_sector()
-
         # Align data size to fit it to 1 sector if needed.
         datasize = ALIGN(len(data), 512)
 
+        # Get free sector to store sectors that file have.
+        sector_list_pos = self.get_free_sector()
+
+        # Create a sector list to be written, based on the data length
+        """
+        sector_lists = list(range(
+            sector_list_pos,
+            sector_list_pos + ((datasize // (512 * 512)) + 1) * 4
+        )) or [sector_list_pos]
+        """
+
+        # print("Need", datasize // (512*512), "sectors")
+        # print("Sectors:", sector_lists)
+
         # Sector list.
         sectors = []
-
-        # If we reached limit, bail out (512 * 512 bytes)
-        if (datasize // 512) > 512:
-            print("File too big!!!", "Max is", (512 // 4) * 512)
-            return
 
         # Get index of entry by name and folder id
         fileidx = self.find_file_entry_raw(name, folder_id)
@@ -221,7 +229,8 @@ class LucarioFS:
         # Then add new file description.
         self.add_entry(structures.EntryType.FILE.value, name, folder_id, sector_list_pos, datasize // 512, len(data))
 
-        # And write data
+        # And write sector data
+        # print("Write", datasize // 512, "sectors")
         for i in range(datasize // 512):
             # Get free sector and append it
             sectors.append(self.get_free_sector())
@@ -235,6 +244,8 @@ class LucarioFS:
                     sectors[i]
                 )
             )
+
+        # print(sectors)
 
         # Split data by sectors and store.
         for n, i in enumerate(sectors):
@@ -268,13 +279,17 @@ class LucarioFS:
 
         return datas[:entry.real_size]
     
-    def format(self):
+    def format(self, full = False):
         # Erase file descriptions (not data)
         
         self.file.seek(0)
         self.file.write(b'\x00' * (
             512 + 4 + (structures.FT_ENTRY.size * self.max_entries)
         ))
+
+        if full:
+            self.file.seek(0)
+            self.file.write(b'\x00' * self.get_disk_size())
 
         # Write magic
         self.file.seek(0)
@@ -290,9 +305,16 @@ class LucarioFS:
         self.file.close()
 
 if __name__ == "__main__":
+    from pprint import pprint
+    
     fs = LucarioFS(open("disk.img", "r+b"))
-    # fs.format()
+    fs.format()
     # fs.check_header()
+
+    fs.write_file("Lucario.txt", b'\nLucario (Japanese: rukario) is a dual-type Fighting/Steel Pokemon introduced in Generation IV.\n\nIt evolves from Riolu when leveled up with high friendship during the day.\n\nLucario can Mega Evolve into Mega Lucario using the Lucarionite.\n')
+
+    # fs.write_file("HelloWorld.txt", b"Hello")
+    # fs.write_file("Lucario.txt", b"I'm Lucario!!!")
 
     for i in fs.get_file_table()[1]:
         print(i.name + ": ")
@@ -304,8 +326,10 @@ if __name__ == "__main__":
         print("\tContents: ", end='')
         
         data = fs.read_file(i.name)
-        print(data)
+        print(data.decode("utf-8"))
 
         print()
+
+    pprint(fs.get_file_table())
 
     fs.close()
