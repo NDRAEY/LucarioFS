@@ -30,6 +30,9 @@ class LucarioFS:
         # Start of data section
         self.data_start = ALIGN(512 + (self.max_entries * structures.FT_ENTRY.size), 512)
 
+        # Data section size
+        self.data_size = self.get_disk_size() - self.data_start
+
         # Read file table.
         self.get_file_table()
 
@@ -110,6 +113,21 @@ class LucarioFS:
             # Is free entry?
             if typ == structures.EntryType.NONE.value:
                 return i
+
+    def get_file_count(self):
+        # Search for free entry in the file entry table
+        self.file.seek(512)  # After header and size
+
+        count = 0
+
+        for i in range(self.max_entries):
+            typ, *entry_data = self.file.read(structures.FT_ENTRY.size)
+
+            # Is not a free entry?
+            if typ != structures.EntryType.NONE.value:
+                count += 1
+
+        return count
 
     def entry_idx_to_seek(self, idx):
         # Find position on disk, where file entry index is located
@@ -274,6 +292,28 @@ class LucarioFS:
             data.append(self.file.read(512))
 
         return data
+
+    def get_used_space_bytes(self):
+        space = 0
+
+        for i in self.get_file_table()[1]:
+            space += i.real_size
+            space += i.sector_list_size * 512
+
+        return space
+
+    def get_used_space_bytes_additional(self):
+        sector_list = 0
+        data = 0
+
+        for i in self.get_file_table()[1]:
+            sector_list += i.real_size
+            data += i.sector_list_size * 512
+
+        return sector_list, data
+
+    def get_free_space_bytes(self):
+        return self.data_size - self.get_used_space_bytes()
 
     def read_file(self, name, folder_id=0):
         # Read file.

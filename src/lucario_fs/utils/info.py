@@ -14,22 +14,27 @@ def main(**kwargs):
             print("Not a LucarioFS disk!")
             return
 
-        file = open(kwargs['file'], "rb")
+        data_size, seclist_size = fs.get_used_space_bytes_additional()
 
-        fs.write_file(kwargs['file'].split("/")[-1], file.read())
+        print("Disk name: ", kwargs['disk'])
+        print("Disk size: ", fs.get_disk_size(), "bytes")
+        print("Used space:", fs.get_used_space_bytes(), "bytes")
+        print("  |- Sector lists:", seclist_size, "bytes")
+        print("  |- File data:", data_size, "bytes")
+        print("Free space:", fs.get_free_space_bytes(), "bytes")
 
-        file.close()
-        
+        print("File count:", fs.get_file_count())
+
         fs.close()
 
         fd.close()
+
 
 def premain():
     import argparse
 
     argparser = argparse.ArgumentParser(prog='mkfs.lucario')
     argparser.add_argument("disk", help="Disk image to format")
-    argparser.add_argument("file", help="File to write to disk")
 
     args = argparser.parse_args()
 
