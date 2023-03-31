@@ -38,7 +38,11 @@ class LucarioFS:
         self.file.seek(0)
 
         # Read bytes and unpack them
-        header = structures.HEADER.unpack_from(self.file.read(len(self.header)))
+        header = structures.HEADER.unpack_from(
+            self.file.read(
+                structures.HEADER.size
+            )
+        )
 
         # Is they match?
         return self.header_bytes == header
@@ -288,7 +292,7 @@ class LucarioFS:
 
         return datas[:entry.real_size]
     
-    def format(self, full = False, version = VERSION):
+    def format(self, full = False, version = __version__):
         # Erase file descriptions (not data)
         
         self.file.seek(0)

@@ -10,6 +10,10 @@ def main(**kwargs):
     with open(kwargs['disk'], "r+b") as fd:
         fs = lucario_fs.LucarioFS(fd)
 
+        if not fs.check_header():
+            print("Not a LucarioFS disk!")
+            return
+
         file = open(kwargs['file'], "rb")
 
         fs.write_file(kwargs['file'], file.read())

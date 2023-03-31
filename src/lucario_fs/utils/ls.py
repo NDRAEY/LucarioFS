@@ -10,7 +10,16 @@ def main(**kwargs):
     with open(kwargs['disk'], "r+b") as fd:
         fs = lucario_fs.LucarioFS(fd)
 
-        fs.format()
+        if not fs.check_header():
+            print("Not a LucarioFS disk!")
+            return
+
+        max_entries, entries = fs.get_file_table()
+
+        print("Contents of", kwargs['disk'], "\n")
+
+        for i in entries:
+            print(f"- {i.name:32} [{i.real_size} bytes]")
 
         fs.close()
 

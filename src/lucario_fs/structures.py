@@ -13,7 +13,7 @@ import struct
 
 # - LCFS magic
 
-HEADER = struct.Struct(b"<4B")
+HEADER = struct.Struct(b"<7B")
 
 
 # FILE TABLE SIZE (in entries)
