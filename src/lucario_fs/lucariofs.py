@@ -9,8 +9,6 @@ except:
     from . import structures
     from .version import __version__
 
-# import struct
-
 # Align function
 ALIGN = lambda value, align: value + (-value & (align - 1))
 
@@ -33,6 +31,12 @@ class LucarioFS:
         # Data section size
         self.data_size = self.get_disk_size() - self.data_start
 
+        # Version
+        self.version = None
+
+        # Check header and load version
+        self.check_header()
+
         # Read file table.
         self.get_file_table()
 
@@ -46,6 +50,8 @@ class LucarioFS:
                 structures.HEADER.size
             )
         )
+
+        self.version = tuple(self.file.read(3))
 
         # Is they match?
         return self.header_bytes == header

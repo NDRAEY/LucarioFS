@@ -17,6 +17,9 @@ def main(**kwargs):
         data_size, seclist_size = fs.get_used_space_bytes_additional()
 
         print("Disk name: ", kwargs['disk'])
+        print("LucarioFS version: {}.{}.{}".format(
+            *fs.version
+        ))
         print("Disk size: ", fs.get_disk_size(), "bytes")
         print("Used space:", fs.get_used_space_bytes(), "bytes")
         print("  |- Sector lists:", seclist_size, "bytes")
