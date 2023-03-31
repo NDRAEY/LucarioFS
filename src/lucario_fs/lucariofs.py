@@ -44,13 +44,14 @@ class LucarioFS:
         # Go to start of the disk
         self.file.seek(0)
 
-        # Read bytes and unpack them
+        # Read magic and unpack.
         header = structures.HEADER.unpack_from(
             self.file.read(
                 structures.HEADER.size
             )
         )
 
+        # Read version
         self.version = tuple(self.file.read(3))
 
         # Is they match?
@@ -87,7 +88,7 @@ class LucarioFS:
                 typ, name, folder_id, sector_list_pos, sector_list_size, rsize
             ))
 
-        # Make it.global
+        # Make it global
         self.file_table = entries
 
         # Return max length of table and entries itself.
