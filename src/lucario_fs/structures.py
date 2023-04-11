@@ -35,7 +35,7 @@ FT_HEADER = struct.Struct(b"<I")
 # - SECTOR LIST SIZE
 # - REAL FILE SIZE
 
-FT_ENTRY = struct.Struct(b"<B256cIIII")
+FT_ENTRY = struct.Struct(b"<B256cIIIII")
 
 
 # SECTOR LIST IS AN ARRAY OF UINT32_T ENTRIES
@@ -56,6 +56,7 @@ class EntryType(Enum):
 class Entry:
     type: int
     name: str
+    folder_target_id: int
     folder_id: int
     sector_list_pos: int
     sector_list_size: int

@@ -68,7 +68,7 @@ class LucarioFS:
         # for i in range(entry_count):
         for i in range(self.max_entries):
             # Eztract data (make sure name is limited by 256 charaacters.)
-            typ, *name, folder_id, sector_list_pos, sector_list_size, rsize = structures.FT_ENTRY.unpack_from(
+            typ, *name, folder_target_id, folder_id, sector_list_pos, sector_list_size, rsize = structures.FT_ENTRY.unpack_from(
                 self.file.read(
                     structures.FT_ENTRY.size
                 )
@@ -85,7 +85,7 @@ class LucarioFS:
 
             # Add entry to.list of entries
             entries.append(structures.Entry(
-                typ, name, folder_id, sector_list_pos, sector_list_size, rsize
+                typ, name, folder_target_id, folder_id, sector_list_pos, sector_list_size, rsize
             ))
 
         # Make it global
@@ -144,7 +144,7 @@ class LucarioFS:
         # Convert string to struct-readable array
         return [i.to_bytes(1, 'little') for i in name.encode("utf-8") + b''.join([b'\x00'] * (256 - len(name)))]
 
-    def write_entry(self, idx, typ, name, folder_id, sector_list_lba, sector_list_size, real_size):
+    def write_entry(self, idx, typ, name, ftid, folder_id, sector_list_lba, sector_list_size, real_size):
         # Write data to file entry.
 
         # Go to needed index.
@@ -152,17 +152,17 @@ class LucarioFS:
 
         # Build data
         tmp = structures.FT_ENTRY.pack(
-            typ, *self.to_name(name), folder_id, sector_list_lba, sector_list_size, real_size
+            typ, *self.to_name(name), ftid, folder_id, sector_list_lba, sector_list_size, real_size
         )
 
         # Write data
         self.file.write(tmp)
 
-    def add_entry(self, typ, name, folder_id, sector_list_lba, sector_list_size, real_size):
+    def add_entry(self, typ, name, ftid, folder_id, sector_list_lba, sector_list_size, real_size):
         # Find free entry and occupy it.
         en = self.find_free_entry_idx()
 
-        self.write_entry(en, typ, name, folder_id, sector_list_lba, sector_list_size, real_size)
+        self.write_entry(en, typ, name, ftid, folder_id, sector_list_lba, sector_list_size, real_size)
 
     def erase_entry(self, idx):
         # Erase entry, (to delete a file)
@@ -226,15 +226,15 @@ class LucarioFS:
 
         return sec
 
-    def create_file(self, name, folder_id = 0):
+    def create_file(self, name, folder_target_id = 0):
         # Just create a file with no sectors, size and data
-        self.add_entry(structures.EntryType.FILE, name, folder_id, 0, 0, 0)
+        self.add_entry(structures.EntryType.FILE, name, folder_target_id, 0, 0, 0)
 
-    def file_exists(self, name, folder_id = 0):
+    def file_exists(self, name, folder_target_id = 0):
         # Check for file existance
-        return self.find_file_entry_raw(name, folder_id) is not None
+        return self.find_file_entry_raw(name, folder_target_id) is not None
 
-    def write_file(self, name, data, folder_id = 0):
+    def write_file(self, name, data, folder_target_id = 0):
         # Hardest thing is write to file.
 
         # Align data size to fit it to 1 sector if needed.
@@ -243,14 +243,6 @@ class LucarioFS:
         # Get free sector to store sectors that file have.
         sector_list_pos = self.get_free_sector()
 
-        # Create a sector list to be written, based on the data length
-        """
-        sector_lists = list(range(
-            sector_list_pos,
-            sector_list_pos + ((datasize // (512 * 512)) + 1) * 4
-        )) or [sector_list_pos]
-        """
-
         # print("Need", datasize // (512*512), "sectors")
         # print("Sectors:", sector_lists)
 
@@ -258,14 +250,14 @@ class LucarioFS:
         sectors = []
 
         # Get index of entry by name and folder id
-        fileidx = self.find_file_entry_raw(name, folder_id)
+        fileidx = self.find_file_entry_raw(name, folder_target_id)
 
         # If file exists, erase it.
         if fileidx is not None:
             self.erase_entry(fileidx)
 
         # Then add new file description.
-        self.add_entry(structures.EntryType.FILE.value, name, folder_id, sector_list_pos, datasize // 512, len(data))
+        self.add_entry(structures.EntryType.FILE.value, name, folder_target_id, 0, sector_list_pos, datasize // 512, len(data))
 
         # And write sector data
         # print("Write", datasize // 512, "sectors")
@@ -373,7 +365,6 @@ def test():
     
     fs = LucarioFS(open("disk.img", "r+b"))
     fs.format()
-    # fs.check_header()
 
     fs.write_file("Lucario.txt", b'\nLucario (Japanese: rukario) is a dual-type Fighting/Steel Pokemon introduced in Generation IV.\n\nIt evolves from Riolu when leveled up with high friendship during the day.\n\nLucario can Mega Evolve into Mega Lucario using the Lucarionite.\n')
     fs.write_file("Pikachu.txt", b"Piiiiiikkaaaaaaaa... CHUUUUUUUUUUU!!!")
