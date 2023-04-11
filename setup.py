@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
+import src.lucario_fs.version as version
 
 setup(
     name='lucario_fs',
-    version='0.1.0',
+    version='.'.join(list(map(str, version.__version__))),
     packages=find_packages('src'),
     package_dir={'': 'src'},
     entry_points = {
