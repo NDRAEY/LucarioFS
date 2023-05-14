@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import time
 
 sys.path.insert(0, "..")
 
@@ -33,7 +34,15 @@ def premain():
 
     args = argparser.parse_args()
 
+    starttime = time.time()
+    
     main(**args.__dict__)
+
+    endtime = time.time()
+
+    elapsed = endtime - starttime
+
+    print(f"[OK] Wrote {args.file} in {round(elapsed, 2)} seconds.")
 
 if __name__=="__main__":
     premain()
